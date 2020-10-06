@@ -3,6 +3,9 @@ import os
 import shutil
 import itertools
 import imutils
+import sklearn.metrics as metrics
+import numpy
+
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
@@ -64,10 +67,14 @@ else:
 IMG_SIZE = 224
 croppedImagesDir = os.listdir('cropped')
 i = 0
+
 for croppedImageName in croppedImagesDir:
     i +=1
-    image = cv2.imread("cropped/" + croppedImageName)
+    #image = cv2.imread("cropped/" + croppedImageName)
+    image = cv2.imread("cropped/" + croppedImageName, cv2.IMREAD_GRAYSCALE)
+
     image = cv2.resize(image, (IMG_SIZE,IMG_SIZE))
+    image = image.reshape(224,224,1)
     if i % 4 == 0:
         if croppedImageName.upper().__contains__("Y"):
             cv2.imwrite("resized/test/yes/" + croppedImageName, image)
@@ -81,19 +88,22 @@ for croppedImageName in croppedImagesDir:
 
 #precprocessing
 classifier = Sequential()
-classifier.add(tflayers.Convolution2D(16,3,3, input_shape=(224,224,3), activation='relu'))
-classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-classifier.add(tflayers.Convolution2D(32,3,3, activation='relu'))
-classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-classifier.add(tflayers.Convolution2D(64,3,3, activation='relu'))
-classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-
+classifier.add(tflayers.Conv2D(32,(7,7), input_shape=(224,224, 1), activation='relu'))
+classifier.add(tflayers.MaxPooling2D(pool_size=(4,4)))
+classifier.add(tflayers.MaxPooling2D(pool_size=(4,4)))
+#classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
 
 classifier.add(tflayers.Flatten())
-classifier.add(tflayers.Dropout(0.2))
-classifier.add(tflayers.Dense(1024, activation='relu'))
+#classifier.add(tflayers.Dropout(0.2))
+#classifier.add(tflayers.Dense(512, activation='relu'))
 classifier.add(tflayers.Dense(1, activation='sigmoid'))
 classifier.compile(optimizer='adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+from keras.callbacks import ModelCheckpoint
+
+filepath="weights.best.hdf5"
+checkpoint = ModelCheckpoint(filepath, monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
+def myFunc(image):
+    return cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
 
 train_datagen = ImageDataGenerator(
     rotation_range=15,
@@ -103,19 +113,24 @@ train_datagen = ImageDataGenerator(
     shear_range=0.05,
     brightness_range=[0.1, 1.5],
     horizontal_flip=True,
-    vertical_flip=True
+    vertical_flip=True,
 )
+
 test_datagen = ImageDataGenerator(rescale=1./255)
 
 training_set = train_datagen.flow_from_directory('resized/train',
                                                  target_size=(224,224),
                                                  batch_size=4,
+                                                 color_mode='grayscale',
                                                  class_mode='binary')
+print(training_set.samples)
 
 test_set = test_datagen.flow_from_directory('resized/test',
                                                  target_size=(224,224),
                                                  batch_size=4,
+                                                 color_mode='grayscale',
                                                  class_mode='binary')
+print(test_set.samples)
 from keras.callbacks import EarlyStopping
 es = EarlyStopping(
     monitor='accuracy',
@@ -125,31 +140,26 @@ es = EarlyStopping(
 classifier.fit(
     training_set,
     steps_per_epoch=int(training_set.samples/training_set.batch_size),
-    epochs=35,
+    epochs=45,
     validation_data=test_set,
     validation_steps=int(test_set.samples/test_set.batch_size),
-    callbacks=[es]
+    callbacks=[es,checkpoint]
 )
 
+
+classifier.load_weights("weights.best.hdf5")
+classifier.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 classifier.summary()
 
-import numpy
 test_steps_per_epoch = numpy.math.ceil(test_set.samples / test_set.batch_size)
 predictions = classifier.predict(test_set, steps=test_steps_per_epoch)
-print(predictions)
 y_int = numpy.zeros_like(predictions)
 y_int[predictions > 0.5] = 1
 
 true_classes = test_set.classes
 class_labels = list(test_set.class_indices)
-import sklearn.metrics as metrics
 report = metrics.classification_report(true_classes, y_int, zero_division=0)
 print(report)
 
 cnf_mtx = confusion_matrix(true_classes, y_int)
 print(cnf_mtx)
-
-
-print(test_set.classes)
-print(true_classes)
-print(y_int)
