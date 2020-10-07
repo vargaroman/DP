@@ -68,6 +68,22 @@ IMG_SIZE = 224
 croppedImagesDir = os.listdir('cropped')
 i = 0
 
+def trainingLoss(history):
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.title('')
+    plt.ylabel('celková úspešnosť')
+    plt.xlabel('počet epoch')
+    plt.legend(['trénovanie', 'validácia'], loc='upper left')
+    plt.show()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('')
+    plt.ylabel('chyba')
+    plt.xlabel('počet epoch')
+    plt.legend(['trénovanie', 'validácia'], loc='upper left')
+    plt.show()
+
 for croppedImageName in croppedImagesDir:
     i +=1
     #image = cv2.imread("cropped/" + croppedImageName)
@@ -90,7 +106,7 @@ for croppedImageName in croppedImagesDir:
 classifier = Sequential()
 classifier.add(tflayers.Conv2D(32,(7,7), input_shape=(224,224, 1), activation='relu'))
 classifier.add(tflayers.MaxPooling2D(pool_size=(4,4)))
-classifier.add(tflayers.MaxPooling2D(pool_size=(4,4)))
+#classifier.add(tflayers.MaxPooling2D(pool_size=(4,4)))
 #classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
 
 classifier.add(tflayers.Flatten())
@@ -115,6 +131,19 @@ train_datagen = ImageDataGenerator(
     horizontal_flip=True,
     vertical_flip=True,
 )
+# #os.mkdir('review')
+# img = cv2.imread('resized/train/yes/Y3.jpg')
+# img = img.reshape((1,)+img.shape)
+# for batch in train_datagen.flow(img,batch_size=1,save_to_dir='review',save_format='jpeg'):
+#     print('done')
+
+plt.subplot(200)
+i = 0
+for image in os.listdir('review'):
+    i+=1
+    if i<20:
+        imageReview = cv2.imread(image)
+        plt.imshow(image)
 
 test_datagen = ImageDataGenerator(rescale=1./255)
 
@@ -137,7 +166,7 @@ es = EarlyStopping(
     mode='max',
     patience=6
 )
-classifier.fit(
+history = classifier.fit(
     training_set,
     steps_per_epoch=int(training_set.samples/training_set.batch_size),
     epochs=45,
@@ -155,6 +184,8 @@ test_steps_per_epoch = numpy.math.ceil(test_set.samples / test_set.batch_size)
 predictions = classifier.predict(test_set, steps=test_steps_per_epoch)
 y_int = numpy.zeros_like(predictions)
 y_int[predictions > 0.5] = 1
+
+trainingLoss(history)
 
 true_classes = test_set.classes
 class_labels = list(test_set.class_indices)
