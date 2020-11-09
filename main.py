@@ -14,7 +14,7 @@ import plotly.graph_objs as go
 from plotly.offline import init_notebook_mode, iplot
 from plotly import tools
 from keras.preprocessing.image import ImageDataGenerator
-from keras.applications.vgg16 import VGG16, preprocess_input
+from keras.applications.vgg16 import preprocess_input
 from keras import layers
 from keras.models import Model, Sequential
 import tensorflow.keras.layers as tflayers
@@ -90,7 +90,7 @@ for croppedImageName in croppedImagesDir:
     image = cv2.imread("cropped/" + croppedImageName, cv2.IMREAD_GRAYSCALE)
 
     image = cv2.resize(image, (IMG_SIZE,IMG_SIZE))
-    image = image.reshape(224,224,1)
+    image = image.reshape(224,224)
     if i % 4 == 0:
         if croppedImageName.upper().__contains__("Y"):
             cv2.imwrite("resized/test/yes/" + croppedImageName, image)
@@ -102,69 +102,67 @@ for croppedImageName in croppedImagesDir:
         else:
             cv2.imwrite("resized/train/no/" + croppedImageName, image)
 
+if os.listdir().__contains__('review'):
+    shutil.rmtree('review', ignore_errors=True)
+
 #precprocessing
 classifier = Sequential()
-classifier.add(tflayers.Conv2D(32,(7,7), input_shape=(224,224, 1), activation='relu'))
-classifier.add(tflayers.MaxPooling2D(pool_size=(4,4)))
-#classifier.add(tflayers.MaxPooling2D(pool_size=(4,4)))
-#classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-
+classifier.add(tflayers.ZeroPadding2D((2,2)))
+classifier.add(tflayers.Conv2D(128,(3,3), input_shape=(224,224)))
+classifier.add(tflayers.BatchNormalization(axis=3, name='bn0'))
+classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
+classifier.add(tflayers.Dropout(0.6))
+classifier.add(tflayers.Conv2D(64,(3,3)))
+classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
+classifier.add(tflayers.Dropout(0.6))
+classifier.add(tflayers.Conv2D(64,(3,3)))
+classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
+classifier.add(tflayers.Dropout(0.6))
+classifier.add(tflayers.Conv2D(64,(3,3)))
+classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
+classifier.add(tflayers.Dropout(0.6))
 classifier.add(tflayers.Flatten())
-#classifier.add(tflayers.Dropout(0.2))
-#classifier.add(tflayers.Dense(512, activation='relu'))
+classifier.add(tflayers.Dropout(0.6))
 classifier.add(tflayers.Dense(1, activation='sigmoid'))
 classifier.compile(optimizer='adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
 from keras.callbacks import ModelCheckpoint
 
 filepath="weights.best.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
-def myFunc(image):
-    return cv2.cvtColor(image,cv2.COLOR_RGB2GRAY)
 
 train_datagen = ImageDataGenerator(
-    rotation_range=15,
+    rotation_range=90,
     width_shift_range=0.05,
     height_shift_range=0.05,
     rescale=1./255,
     shear_range=0.05,
     brightness_range=[0.1, 1.5],
     horizontal_flip=True,
-    vertical_flip=True,
+    vertical_flip=True
 )
-# #os.mkdir('review')
-# img = cv2.imread('resized/train/yes/Y3.jpg')
-# img = img.reshape((1,)+img.shape)
-# for batch in train_datagen.flow(img,batch_size=1,save_to_dir='review',save_format='jpeg'):
-#     print('done')
-
-plt.subplot(200)
-i = 0
-for image in os.listdir('review'):
-    i+=1
-    if i<20:
-        imageReview = cv2.imread(image)
-        plt.imshow(image)
 
 test_datagen = ImageDataGenerator(rescale=1./255)
 
 training_set = train_datagen.flow_from_directory('resized/train',
                                                  target_size=(224,224),
-                                                 batch_size=4,
-                                                 color_mode='grayscale',
-                                                 class_mode='binary')
+                                                 batch_size=32,
+                                                 color_mode='rgb',
+                                                 class_mode='binary'
+                                                 )
 print(training_set.samples)
 
 test_set = test_datagen.flow_from_directory('resized/test',
                                                  target_size=(224,224),
-                                                 batch_size=4,
-                                                 color_mode='grayscale',
-                                                 class_mode='binary')
+                                                 batch_size=16,
+                                                 color_mode='rgb',
+                                                 class_mode='binary'
+                                            )
 print(test_set.samples)
 from keras.callbacks import EarlyStopping
 es = EarlyStopping(
-    monitor='accuracy',
+    monitor='val_accuracy',
     mode='max',
-    patience=6
+    patience=10
 )
 history = classifier.fit(
     training_set,
