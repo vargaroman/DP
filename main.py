@@ -5,7 +5,7 @@ import itertools
 import imutils
 import sklearn.metrics as metrics
 import numpy
-
+from keras.models import load_model
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
@@ -27,9 +27,10 @@ i = 0
 if not os.listdir().__contains__('cropped'):
     os.mkdir('cropped')
 for imagename in imgdir:
-    if (imagename.upper().__contains__("JPG") or imagename.upper().__contains__("JPEG") or imagename.upper().__contains__("PNG")):
+    if (imagename.upper().__contains__("JPG") or imagename.upper().__contains__(
+            "JPEG") or imagename.upper().__contains__("PNG")):
         i += 1
-        image = cv2.imread("dataset/"+imagename)
+        image = cv2.imread("dataset/" + imagename)
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         gray = cv2.GaussianBlur(gray, (5, 5), 0)
         thresh = cv2.threshold(gray, 45, 255, cv2.THRESH_BINARY)[1]
@@ -43,8 +44,8 @@ for imagename in imgdir:
         extRight = tuple(c[c[:, :, 0].argmax()][0])
         extTop = tuple(c[c[:, :, 1].argmin()][0])
         extBot = tuple(c[c[:, :, 1].argmax()][0])
-        crop_img = image[extTop[1]:extBot[1],extLeft[0]:extRight[0]]
-        cv2.imwrite("cropped/"+imagename,crop_img)
+        crop_img = image[extTop[1]:extBot[1], extLeft[0]:extRight[0]]
+        cv2.imwrite("cropped/" + imagename, crop_img)
 
 if not os.listdir().__contains__('resized'):
     os.mkdir('resized')
@@ -68,6 +69,7 @@ IMG_SIZE = 224
 croppedImagesDir = os.listdir('cropped')
 i = 0
 
+
 def trainingLoss(history):
     plt.plot(history.history['accuracy'])
     plt.plot(history.history['val_accuracy'])
@@ -84,13 +86,14 @@ def trainingLoss(history):
     plt.legend(['trénovanie', 'validácia'], loc='upper left')
     plt.show()
 
+
 for croppedImageName in croppedImagesDir:
-    i +=1
-    #image = cv2.imread("cropped/" + croppedImageName)
+    i += 1
+    # image = cv2.imread("cropped/" + croppedImageName)
     image = cv2.imread("cropped/" + croppedImageName, cv2.IMREAD_GRAYSCALE)
 
-    image = cv2.resize(image, (IMG_SIZE,IMG_SIZE))
-    image = image.reshape(224,224)
+    image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
+    image = image.reshape(224, 224)
     if i % 4 == 0:
         if croppedImageName.upper().__contains__("Y"):
             cv2.imwrite("resized/test/yes/" + croppedImageName, image)
@@ -104,61 +107,71 @@ for croppedImageName in croppedImagesDir:
 
 if os.listdir().__contains__('review'):
     shutil.rmtree('review', ignore_errors=True)
+from VargaLayer import VargaLayer
+from VargaRotationLayer import VargaRotationLayer
 
-#precprocessing
+# precprocessing
 classifier = Sequential()
-classifier.add(tflayers.ZeroPadding2D((2,2)))
-classifier.add(tflayers.Conv2D(128,(3,3), input_shape=(224,224)))
-classifier.add(tflayers.BatchNormalization(axis=3, name='bn0'))
+classifier.add(VargaLayer(64, input_shape=(224,224,1)))
+classifier.add(tflayers.Conv2D(32,(7,7)))
 classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-classifier.add(tflayers.Dropout(0.6))
-classifier.add(tflayers.Conv2D(64,(3,3)))
+classifier.add(VargaRotationLayer(64))
+classifier.add(tflayers.Conv2D(32,(5,5)))
 classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-classifier.add(tflayers.Dropout(0.6))
-classifier.add(tflayers.Conv2D(64,(3,3)))
+# classifier.add(tflayers.ZeroPadding2D((2,2)))
+classifier.add(tflayers.Conv2D(32,(3,3)))
+# classifier.add(tflayers.BatchNormalization(axis=3, name='bn0'))
 classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-classifier.add(tflayers.Dropout(0.6))
-classifier.add(tflayers.Conv2D(64,(3,3)))
+# classifier.add(tflayers.Dropout(0.6))
+classifier.add(tflayers.Conv2D(16,(3,3)))
 classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-classifier.add(tflayers.Dropout(0.6))
+# classifier.add(tflayers.Dropout(0.6))
+# classifier.add(tflayers.Conv2D(64,(3,3)))
+# classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
+# classifier.add(tflayers.Dropout(0.6))
+# classifier.add(tflayers.Conv2D(64,(3,3)))
+# classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
+# classifier.add(tflayers.Dropout(0.6))
+classifier.add(tflayers.Dense(32))
 classifier.add(tflayers.Flatten())
 classifier.add(tflayers.Dropout(0.6))
 classifier.add(tflayers.Dense(1, activation='sigmoid'))
-classifier.compile(optimizer='adam', loss = 'binary_crossentropy', metrics = ['accuracy'])
+classifier.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 from keras.callbacks import ModelCheckpoint
 
-filepath="weights.best.hdf5"
+filepath = "weights.best.hdf5"
 checkpoint = ModelCheckpoint(filepath, monitor='val_accuracy', verbose=1, save_best_only=True, mode='max')
 
 train_datagen = ImageDataGenerator(
     rotation_range=90,
     width_shift_range=0.05,
     height_shift_range=0.05,
-    rescale=1./255,
+    rescale=1. / 255,
     shear_range=0.05,
     brightness_range=[0.1, 1.5],
     horizontal_flip=True,
     vertical_flip=True
 )
 
-test_datagen = ImageDataGenerator(rescale=1./255)
+test_datagen = ImageDataGenerator(rescale=1. / 255)
 
 training_set = train_datagen.flow_from_directory('resized/train',
-                                                 target_size=(224,224),
+                                                 target_size=(224, 224),
                                                  batch_size=32,
-                                                 color_mode='rgb',
+                                                 color_mode='grayscale',
                                                  class_mode='binary'
                                                  )
 print(training_set.samples)
 
 test_set = test_datagen.flow_from_directory('resized/test',
-                                                 target_size=(224,224),
-                                                 batch_size=16,
-                                                 color_mode='rgb',
-                                                 class_mode='binary'
+                                            target_size=(224, 224),
+                                            batch_size=16,
+                                            color_mode='grayscale',
+                                            class_mode='binary'
                                             )
 print(test_set.samples)
 from keras.callbacks import EarlyStopping
+
 es = EarlyStopping(
     monitor='val_accuracy',
     mode='max',
@@ -166,20 +179,18 @@ es = EarlyStopping(
 )
 history = classifier.fit(
     training_set,
-    steps_per_epoch=int(training_set.samples/training_set.batch_size),
-    epochs=45,
+    steps_per_epoch=int(training_set.samples / training_set.batch_size),
+    epochs=50,
     validation_data=test_set,
-    validation_steps=int(test_set.samples/test_set.batch_size),
-    callbacks=[es,checkpoint]
+    validation_steps=int(test_set.samples / test_set.batch_size),
+    callbacks=[es, checkpoint]
 )
 
-
-classifier.load_weights("weights.best.hdf5")
-classifier.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-classifier.summary()
+best_model = load_model('weights.best.hdf5', custom_objects={'VargaLayer': VargaLayer, 'VargaRotationLayer':VargaRotationLayer})
+best_model.summary()
 
 test_steps_per_epoch = numpy.math.ceil(test_set.samples / test_set.batch_size)
-predictions = classifier.predict(test_set, steps=test_steps_per_epoch)
+predictions = best_model.predict(test_set, steps=test_steps_per_epoch)
 y_int = numpy.zeros_like(predictions)
 y_int[predictions > 0.5] = 1
 

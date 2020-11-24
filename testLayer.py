@@ -1,8 +1,12 @@
 from keras.models import Model, Sequential
 from keras.layers import Dense
-import VargaLayer as VL
+from VargaLayer import VargaLayer as VL
+import matplotlib.pyplot as plt
 
-model=Sequential()
-model.add(VL.VargaLayer(32, input_shape = (16,)))
-model.add(Dense(8, activation='softmax'))
-model.summary()
+
+plt.imshow(VL()('resized/test/yes/Y14.jpg')[0])
+
+# model=Sequential()
+# model.add(VargaLayer())
+# model.add(Dense(8, activation='softmax'))
+# model.summary()
