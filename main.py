@@ -109,32 +109,28 @@ if os.listdir().__contains__('review'):
     shutil.rmtree('review', ignore_errors=True)
 from VargaLayer import VargaLayer
 from VargaRotationLayer import VargaRotationLayer
-
+from VargaColorLayer import VargaColorLayer
 # precprocessing
 classifier = Sequential()
-classifier.add(VargaLayer(64, input_shape=(224,224,1)))
-classifier.add(tflayers.Conv2D(32,(7,7)))
-classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-classifier.add(VargaRotationLayer(64))
-classifier.add(tflayers.Conv2D(32,(5,5)))
-classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-# classifier.add(tflayers.ZeroPadding2D((2,2)))
-classifier.add(tflayers.Conv2D(32,(3,3)))
-# classifier.add(tflayers.BatchNormalization(axis=3, name='bn0'))
-classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-# classifier.add(tflayers.Dropout(0.6))
-classifier.add(tflayers.Conv2D(16,(3,3)))
-classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-# classifier.add(tflayers.Dropout(0.6))
-# classifier.add(tflayers.Conv2D(64,(3,3)))
-# classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-# classifier.add(tflayers.Dropout(0.6))
-# classifier.add(tflayers.Conv2D(64,(3,3)))
-# classifier.add(tflayers.MaxPooling2D(pool_size=(2,2)))
-# classifier.add(tflayers.Dropout(0.6))
-classifier.add(tflayers.Dense(32))
+layer1 = VargaLayer(64,input_shape=(224,224,1))
+layer2 = VargaRotationLayer(128)
+# layer3 = VargaColorLayer(64)
+classifier.add(layer1)
+classifier.add(layer2)
+# classifier.add(layer3)
+weights = layer1.get_weights()
+weights2 = layer2.get_weights()
+# weights3 = layer3.get_weights()
+print(weights)
+print(weights2)
+# print(weights3)
+
+classifier.add(tflayers.Conv2D(16, (2,2)))
+classifier.add(tflayers.MaxPooling2D(16,(4,4)))
+# classifier.add(tflayers.Conv2D(8, (2,2)))
+# classifier.add(tflayers.MaxPooling2D(16,(4,4)))
 classifier.add(tflayers.Flatten())
-classifier.add(tflayers.Dropout(0.6))
+classifier.add(tflayers.Dropout(0.3))
 classifier.add(tflayers.Dense(1, activation='sigmoid'))
 classifier.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 from keras.callbacks import ModelCheckpoint
@@ -180,7 +176,7 @@ es = EarlyStopping(
 history = classifier.fit(
     training_set,
     steps_per_epoch=int(training_set.samples / training_set.batch_size),
-    epochs=50,
+    epochs=10,
     validation_data=test_set,
     validation_steps=int(test_set.samples / test_set.batch_size),
     callbacks=[es, checkpoint]
@@ -188,6 +184,8 @@ history = classifier.fit(
 
 best_model = load_model('weights.best.hdf5', custom_objects={'VargaLayer': VargaLayer, 'VargaRotationLayer':VargaRotationLayer})
 best_model.summary()
+print(best_model.layers[0].get_weights())
+print(best_model.layers[1].get_weights())
 
 test_steps_per_epoch = numpy.math.ceil(test_set.samples / test_set.batch_size)
 predictions = best_model.predict(test_set, steps=test_steps_per_epoch)
