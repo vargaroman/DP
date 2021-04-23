@@ -6,8 +6,7 @@ __pycache__/
 # C extensions
 *.so
 
-resized/
-cropped/
+venv
 # Distribution / packaging
 .Python
 build/

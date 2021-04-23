@@ -6,23 +6,31 @@ from numpy import expand_dims
 from keras.models import load_model
 from skimage.color import rgb2gray
 import os
-from VargaLayer import VargaLayer
-from VargaRotationLayer import VargaRotationLayer
-from VargaColorLayer import VargaColorLayer
+from CustomLayers.HorizontalFlipLayer import HorizontalFlipLayer
+from CustomLayers.RotationLayer import RotationLayer
+from CustomLayers.BrightnessLayer import BrightnessLayer
+from CustomLayers.SandPLayer import SandPLayer
+from CustomLayers.VerticalFlipLayer import VerticalFlipLayer
 # load the model
-model = load_model('weights.best.hdf5', custom_objects={'VargaLayer': VargaLayer, 'VargaRotationLayer':VargaRotationLayer, 'VargaColorLayer': VargaColorLayer})
+model = load_model('weights.best.hdf5', custom_objects={'HorizontalFlipLayer': HorizontalFlipLayer, 'VerticalFlipLayer': VerticalFlipLayer, 'RotationLayer':RotationLayer, 'BrightnessLayer': BrightnessLayer, 'SandPLayer':SandPLayer})
+model.summary()
 # redefine model to output right after the first hidden layer
-ixs = [0, 1, 2]
+ixs = [0,1,2,3]
+i = 0
+for layer in model.layers:
+    ixs.append(i)
+    i+=1
 outputs = [model.layers[i].output for i in ixs]
 model = Model(inputs=model.inputs, outputs=outputs)
 # load the image with the required shape
 i=0
-for image in os.listdir('resized/test/yes'):
-    while i < 2:
+for image in os.listdir('resizedcovid224x224/test/COVID'):
+    while i < 5:
         i += 1
         print(image)
-        img = load_img('resized/test/yes/'+image, target_size=(224, 224))
-        print(img)
+        img = load_img('resizedcovid224x224/test/COVID/'+image, target_size=(64, 64))
+        pyplot.imshow(img)
+        pyplot.show()
         # convert the image to an array
         img = img_to_array(img)
         img = rgb2gray(img)
@@ -34,9 +42,8 @@ for image in os.listdir('resized/test/yes'):
         # get feature map for first hidden layer
         feature_maps = model.predict(img)
         # plot the output from each block
-        square = 2
+        square = 1
         for fmap in feature_maps:
-            # plot all 64 maps
             ix = 1
             for _ in range(square):
                 for _ in range(square):
