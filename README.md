@@ -257,6 +257,10 @@ Vrstva jasu upravu jas šedotónového obrázku. To zabezpečí funkcia `adjust_
 Prvý je samotný tensor (2D pole) a hodnotu, o ktorú sa ma upraviť hodnota pre každý pixel. 
 Tá je generovaná z rozmedzia hodnôt `lower_bound` a `upper_bound`, ktoré sa prednastavené na hodnoty -1 a 1.
 Je to z dôvodu že funkcia je aplikovaná na normalizovaný obrázok.
+
+Pôvodný obrázok           |  Obrázok s vrstvou šumu
+:-------------------------:|:-------------------------:
+![](images/brightness_original.png)  |  ![](images/Brightness_adjusted.png)
       
 ## Vytváranie modelu a použitie vrstiev
 Pri vytváraní modelu si používateľ musi najprv jednotlivé vrstvy importovať. 
