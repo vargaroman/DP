@@ -2,15 +2,19 @@
 Táto práca vznikla a reprezentuje riešenie na zadanie Diplomovej práce.
 Hlavným zámerom bolo vytvoriť funkčné riešenie augmentačných vrstiev, ktoré sa vo väčšine prípadov vykonávajú v časti 
 predspracovania a prípravy dát. Praktická časť práce je písana v jazyku Python 3.8
-## Použité balíčky
+## Použité knižnice
+V tejto časti sú uvedené najdôležitejšie knižnice.
 - Keras 2.4.3
 - Tensorflow 2.4.1 
 - Albumentations
 - Numpy
 
+**Upozornenie:** Je možné, že jednotlivé knižnice budú vyžadovať doinštalovanie ďalších dependency, 
+ktoré nie sú uvedené v tomto zozname.
 ## Predspracovanie
-Časť predspracovania je vykonaná len pri práci s MRI datasetom. Je to kvôli segmentácií samotného objektu mozgu, ktorá je vykonaná týmto kódom.
-   
+Časť predspracovania je vykonaná len pri práci s MRI datasetom. Je to kvôli segmentácií samotného objektu mozgu, ktorá je vykonaná v skripte `MRISegmentation.py`.
+Segmentácia je vykonaná tymto skriptom, ktorý prehľadáva obrázky v zložke `dataset`, kde sú uložené všetky MRI snímky. Výsledné snímky skript uloží do zložky `cropped`
+
     if not os.listdir().__contains__('cropped'):
         os.mkdir('cropped')
     for imagename in imgdir:
@@ -41,6 +45,21 @@ Pôvodný obrázok           |  Orezaný obrázok
 :-------------------------:|:-------------------------:
 ![](images/original_image.png)  |  ![](images/cropped_image.png)
 
+Následne tieto orezané snímky v zložke `cropped` rozdelí do svojích tried pomocu tohto kódu, kde premenná `IMG_SIZE` popisuje veľkos konečného obrázka
+
+    IMG_SIZE = 64
+    croppedImagesDir = os.listdir('cropped')
+    i = 0
+    
+    for croppedImageName in croppedImagesDir:
+        image = cv2.imread("cropped/" + croppedImageName, cv2.IMREAD_GRAYSCALE)
+        image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
+        image = image.reshape(64, 64)
+        if croppedImageName.upper().__contains__("Y"):
+            cv2.imwrite("resizedMRI64x64/yes/" + croppedImageName, image)
+        else:
+            cv2.imwrite("resizedMRI64x64/no/" + croppedImageName, image)
+## Načítanie dát
 Ďalšími krokmi sú samotné načítanie dát a ich rozdelenie na trénovaciu a testovaciu množinu. 
 To je zabezpečené v tejto časti práce. Najprv si teda používateľ zadefinuje konštanty. 
 Dôležité je hlavne určiť veľkosť snímkov.
@@ -59,7 +78,7 @@ Dôležité je hlavne určiť veľkosť snímkov.
     folder="directory/folder path"
 
 Je potrebné zadefinovať triedy, do ktorých budeme jednotlivé snímky klasifikovať a zároveň vybrať zdroj snímkov. 
-V tomto prípade ide o model na klasifikáciu COVID-u a obrázky sú uložené v zložke datasetcovid.
+V tomto prípade ide o model na klasifikáciu COVID-u a obrázky sú uložené v zložke datasetcovid. Pre zmenu zdrojových obrázkov je nutné upraviť premennú `source_dir`.
 
     disease_types=['COVID', 'non-COVID']
     source_dir = 'datasetcovid'
@@ -104,7 +123,8 @@ Táto časť kódu zabezpečuje normalizáciu obrázka a následne samotné rozd
 
 ## Vytvorené riešenie
 Výstup tejto práce sú štyri funkčné vrstvy, ktoré dokážu augmentovať 
-obrázkovy vstup. Tie majú slúžiť používateľovi na augmentáciu a následne učenie modelu.
+obrázkovy vstup. Tie majú slúžiť používateľovi na augmentáciu a následne učenie modelu. 
+Jednotlivé zdrojové kody pre každú vrstvu sa nachádzajú v zložke `CustomLayers`.
 
 ### FlipLayer
     from keras.layers import Layer
@@ -249,7 +269,8 @@ Vrstvy si prispôsobené na používanie len na začiatku modelu keďže po kaž
     from CustomLayers.VargaSandP import VargaSandP
     from CustomLayers.VerticalFlipLayer import VerticalFlipLayer
     
-Následne musí používateľ tieto vrstvy inicializovať a pre každú vrstvu nastaviť potrebné parametre. Veľmi dôležité je modelu zadať 
+Následne musí používateľ tieto vrstvy inicializovať a pre každú vrstvu nastaviť potrebné parametre. 
+Veľmi dôležité je modelu zadať 
 `input_shape-(heigth, width, channel)` v prípade že je táto vrstva vstupnou vrstvou.
 
     flipLayer = HorizontalFlipLayer(None, input_shape=(64, 64, 1))
@@ -289,5 +310,31 @@ Pred samotným trénovaním si používateľ môže nastaviť rôzne vlastnosti 
     checkpoint = ModelCheckpoint(saved_model, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
     model.fit(train_data, train_labels, validation_data=(test_data, test_labels), epochs = 100, batch_size = BATCH_SIZE, callbacks=[checkpoint, es])
 
-V tomto prípade ide o Early stopping čo by malo zabezpečiť ukončenie trénovania v prípade že sa model po 10 epochách nezlepší.
+V tomto prípade ide o Early stopping čo by malo zabezpečiť ukončenie trénovania v prípade že sa model po 
+10 epochách nezlepší.
 Zároveň je nastavený checkpoint čo je úložný bod pre najlepší model, ktorý sa uloží do súboru save_model.
+
+# ImageDataAugmentator a Albumentations
+Pre porovnanie výsledkov je potrebné spustiť aj skript `Albumentations.py`, 
+ktorý slúží na natrénovanie modelov pre MRI a COVID dataset, ktorý bude využívať augmentačný nástroj Albumentations
+Tento postup využíva funkciu `flow_from_directory()` celá štruktúra zdrojovej zložkz so snímkami je rozdielna. 
+Preto sme vytvorili duplikát datasetov, ktoré sú v zložkách `resizedcovid224x224` a `IDGresized64x64`.
+
+# ImageDataGenerator
+Pomocou skryptu `ImageDataGenerator.py` používateľ môže získať výsledky z riešenia augmentácií pomocou IDG. 
+Je ale nutné zvoliť spávne cesty k datasetom, ktoré majú špecificku štruktúru ako v prípade `Albumentations`. 
+
+# Manuálne augmentácie
+Tieto augmentáciu sú vytvorené v skripte `ManualAugmentations.py`. Výber augmentačných techník je vykonávaný v kóde:
+
+    transform = A.Compose(
+        [A.CLAHE(),
+         A.Flip(always_apply=True),
+         A.RandomBrightness(limit=(-0.2,0.2)),
+         A.Rotate((-10,10), always_apply=True)
+        ])
+Používateľ si môže zvoliť rôzne augmentačné operácie. V tomto prípade sú uvedené len tie, ktoré porovnávamé s augmetančnými vrstvami.
+
+# Vizualizácia vrstiev
+Augmentačné procesy v jednotlivých vrstvách je možné vizualizovať pomocou skriptu `VisualizeModel.py` 
+

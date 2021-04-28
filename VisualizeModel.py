@@ -24,11 +24,11 @@ outputs = [model.layers[i].output for i in ixs]
 model = Model(inputs=model.inputs, outputs=outputs)
 # load the image with the required shape
 i=0
-for image in os.listdir('resizedcovid224x224/test/COVID'):
+for image in os.listdir('resizedMRI64x64/yes/'):
     while i < 5:
         i += 1
         print(image)
-        img = load_img('resizedcovid224x224/test/COVID/'+image, target_size=(64, 64))
+        img = load_img('resizedMRI64x64/yes/'+image, target_size=(64, 64))
         pyplot.imshow(img)
         pyplot.show()
         # convert the image to an array

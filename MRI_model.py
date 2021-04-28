@@ -24,7 +24,7 @@ def load_images_from_folder(folder):
 folder="directory/folder path"
 
 disease_types=['yes', 'no']
-source_dir = 'resizedMRI224x224'
+source_dir = 'resizedMRI64x64'
 data_dir = os.path.join(source_dir)
 
 all_data = []
@@ -74,16 +74,16 @@ from CustomLayers.SandPLayer import SandPLayer
 from CustomLayers.VerticalFlipLayer import VerticalFlipLayer
 flipLayer = HorizontalFlipLayer(None, input_shape=(IMAGE_SIZE, IMAGE_SIZE, 1))
 verticalFlipLayer = VerticalFlipLayer(None, input_shape=(IMAGE_SIZE, IMAGE_SIZE, 1))
-brightnessLayer = BrightnessLayer(None, input_shape=(IMAGE_SIZE, IMAGE_SIZE, 1), lower_bound=0.5, upper_bound=0.8)
+brightnessLayer = BrightnessLayer(None, input_shape=(IMAGE_SIZE, IMAGE_SIZE, 1), lower_bound=0.1, upper_bound=0.5)
 rotatioLayer = RotationLayer(None, input_shape=(IMAGE_SIZE, IMAGE_SIZE, 1), upper_bound=10, lower_bound=-10)
 sandpLayer = SandPLayer(None, input_shape=(IMAGE_SIZE, IMAGE_SIZE, 1), noise_ratio=0.4, sandp_ratio=0.5)
 
 
 model = Sequential()
-model.add(flipLayer)
-model.add(verticalFlipLayer)
-model.add(rotatioLayer)
-model.add(sandpLayer)
+# model.add(flipLayer)
+# model.add(verticalFlipLayer)
+# model.add(rotatioLayer)
+# model.add(sandpLayer)
 model.add(brightnessLayer)
 model.add(Conv2D(48, 5,input_shape=(IMAGE_SIZE, IMAGE_SIZE, 1), padding = 'same', activation = 'relu'))
 model.add(MaxPool2D(pool_size = 3, strides = 2))
