@@ -12,9 +12,10 @@ class BrightnessLayer(Layer):
     def build(self, input_shape):
         super(BrightnessLayer, self).build(input_shape)
 
-    def call(self, inputs , **kwargs):
+    def call(self, inputs, **kwargs):
         brightness = np.random.uniform(self.lower_bound, self.upper_bound)
-        return tf.image.adjust_brightness(inputs, brightness)
+        image = tf.image.adjust_brightness(inputs, delta=brightness)
+        return image
 
     def compute_output_shape(self, input_shape):
         return (input_shape[0], input_shape[1], input_shape[2])
