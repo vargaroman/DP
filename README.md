@@ -178,7 +178,7 @@ Pôvodný obrázok           |  Preklopený obrázok
             self.upper_bound = upper_bound
     
         def build(self, input_shape):
-            super(VargaRotationLayer, self).build(input_shape)
+            super(RotationLayer, self).build(input_shape)
     
         def call(self, inputs, **kwargs):
             if self.lower_bound is not None and self.upper_bound is not None:
@@ -268,9 +268,9 @@ To vykoná rovankým príkazom ako keď chce implementovať akýkoľvek iný bal
 Vrstvy si prispôsobené na používanie len na začiatku modelu keďže po každej konvolučnej vrstve sa rozmery obrázkov menia.
 
     from CustomLayers.HorizontalFlipLayer import HorizontalFlipLayer
-    from CustomLayers.VargaRotationLayer import VargaRotationLayer
-    from CustomLayers.VargaBrightnessLayer import VargaBrightnessLayer
-    from CustomLayers.VargaSandP import VargaSandP
+    from CustomLayers.RotationLayer import RotationLayer
+    from CustomLayers.BrightnessLayer import BrightnessLayer
+    from CustomLayers.SandP import SandP
     from CustomLayers.VerticalFlipLayer import VerticalFlipLayer
     
 Následne musí používateľ tieto vrstvy inicializovať a pre každú vrstvu nastaviť potrebné parametre. 
@@ -279,9 +279,9 @@ Veľmi dôležité je modelu zadať
 
     flipLayer = HorizontalFlipLayer(None, input_shape=(64, 64, 1))
     verticalFlipLayer = VerticalFlipLayer(None, input_shape=(64, 64, 1))
-    brightnessLayer = VargaBrightnessLayer(None,input_shape=(64, 64, 1), lower_bound=-0.2, upper_bound=0.2)
-    rotatioLayer = VargaRotationLayer(None,input_shape=(64, 64, 1), upper_bound=10, lower_bound=-10)
-    sandpLayer = VargaSandP(None,input_shape=(64, 64, 1),noise_ratio=0.02, sandp_ratio=0.5)
+    brightnessLayer = BrightnessLayer(None,input_shape=(64, 64, 1), lower_bound=-0.2, upper_bound=0.2)
+    rotatioLayer = RotationLayer(None,input_shape=(64, 64, 1), upper_bound=10, lower_bound=-10)
+    sandpLayer = SandP(None,input_shape=(64, 64, 1),noise_ratio=0.02, sandp_ratio=0.5)
 
 Celý model môže vyzerať takto
 
