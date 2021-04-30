@@ -7,9 +7,11 @@ from CustomLayers.VerticalFlipLayer import VerticalFlipLayer
 from CustomLayers.RotationLayer import RotationLayer
 from CustomLayers.BrightnessLayer import BrightnessLayer
 from CustomLayers.SandPLayer import SandPLayer
-
 from keras.models import load_model
 import numpy
+import os
+import shutil
+import cv2
 
 def trainingLoss(history):
     plt.plot(history.history['accuracy'])
@@ -26,6 +28,52 @@ def trainingLoss(history):
     plt.xlabel('počet epoch')
     plt.legend(['trénovanie', 'validácia'], loc='upper left')
     plt.show()
+
+
+if not os.listdir().__contains__('resizedcovid224x224'):
+    os.mkdir('resizedcovid224x224')
+    os.mkdir('resizedcovid224x224/test')
+    os.mkdir('resizedcovid224x224/train')
+    os.mkdir('resizedcovid224x224/train/non-COVID')
+    os.mkdir('resizedcovid224x224/train/COVID')
+    os.mkdir('resizedcovid224x224/test/non-COVID')
+    os.mkdir('resizedcovid224x224/test/COVID')
+else:
+    shutil.rmtree('resizedcovid224x224')
+    os.mkdir('resizedcovid224x224')
+    os.mkdir('resizedcovid224x224/test')
+    os.mkdir('resizedcovid224x224/train')
+    os.mkdir('resizedcovid224x224/train/non-COVID')
+    os.mkdir('resizedcovid224x224/train/COVID')
+    os.mkdir('resizedcovid224x224/test/non-COVID')
+    os.mkdir('resizedcovid224x224/test/COVID')
+
+datasetCovidDir = os.listdir('datasetcovid/COVID')
+datasetnonCovidDir = os.listdir('datasetcovid/non-COVID')
+
+i = 0
+IMG_SIZE = 224
+
+for imageName in datasetCovidDir:
+    i+=1
+    image = cv2.imread("datasetcovid/COVID/" + imageName, cv2.IMREAD_GRAYSCALE)
+    image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
+    image = image.reshape(IMG_SIZE, IMG_SIZE)
+    if i%3:
+        cv2.imwrite("resizedcovid224x224/test/COVID/" + imageName, image)
+    else:
+        cv2.imwrite("resizedcovid224x224/train/COVID/" + imageName, image)
+
+i=0
+for imageName in datasetnonCovidDir:
+    i+=1
+    image = cv2.imread("datasetcovid/non-COVID/" + imageName, cv2.IMREAD_GRAYSCALE)
+    image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
+    image = image.reshape(IMG_SIZE, IMG_SIZE)
+    if i%3:
+        cv2.imwrite("resizedcovid224x224/test/non-COVID/" + imageName, image)
+    else:
+        cv2.imwrite("resizedcovid224x224/train/non-COVID/" + imageName, image)
 
 train_datagen = ImageDataGenerator(
     rotation_range=15,

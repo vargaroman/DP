@@ -2,6 +2,7 @@
 Táto práca vznikla a reprezentuje riešenie na zadanie Diplomovej práce.
 Hlavným zámerom bolo vytvoriť funkčné riešenie augmentačných vrstiev, ktoré sa vo väčšine prípadov vykonávajú v časti 
 predspracovania a prípravy dát. Praktická časť práce je písana v jazyku Python 3.8
+
 ## Použité knižnice
 V tejto časti sú uvedené najdôležitejšie knižnice.
 - Keras 2.4.3
@@ -11,6 +12,13 @@ V tejto časti sú uvedené najdôležitejšie knižnice.
 
 **Upozornenie:** Je možné, že jednotlivé knižnice budú vyžadovať doinštalovanie ďalších dependency, 
 ktoré nie sú uvedené v tomto zozname.
+
+## Datasety 
+Datasety sú dostupné na `https://www.kaggle.com/navoneel/brain-mri-images-for-brain-tumor-detection` (MRI dataset) a
+`https://www.medrxiv.org/content/10.1101/2020.04.24.20078584v2` (COVID dataset).
+
+MRIdataset je nutné uložiť do zložky `dataset` a COVID dataset do zložky `datasetcovid`.
+
 ## Predspracovanie
 Časť predspracovania je vykonaná len pri práci s MRI datasetom. Je to kvôli segmentácií samotného objektu mozgu, ktorá je vykonaná v skripte `MRISegmentation.py`.
 Segmentácia je vykonaná tymto skriptom, ktorý prehľadáva obrázky v zložke `dataset`, kde sú uložené všetky MRI snímky. Výsledné snímky skript uloží do zložky `cropped`

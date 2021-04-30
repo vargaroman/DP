@@ -2,13 +2,13 @@ from ImageDataAugmentor.image_data_augmentor import *
 import os
 import imutils
 import shutil
-from matplotlib import pyplot
 
 
 imgdir = os.listdir('dataset')
 i = 0
 if not os.listdir().__contains__('cropped'):
     os.mkdir('cropped')
+
 for imagename in imgdir:
     if (imagename.upper().__contains__("JPG") or imagename.upper().__contains__(
             "JPEG") or imagename.upper().__contains__("PNG")):
@@ -41,6 +41,10 @@ else:
     os.mkdir('resizedMRI64x64/yes')
     os.mkdir('resizedMRI64x64/no')
 
+
+
+
+
 IMG_SIZE = 64
 croppedImagesDir = os.listdir('cropped')
 i = 0
@@ -48,7 +52,7 @@ i = 0
 for croppedImageName in croppedImagesDir:
     image = cv2.imread("cropped/" + croppedImageName, cv2.IMREAD_GRAYSCALE)
     image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
-    image = image.reshape(64, 64)
+    image = image.reshape(IMG_SIZE, IMG_SIZE)
     if croppedImageName.upper().__contains__("Y"):
         cv2.imwrite("resizedMRI64x64/yes/" + croppedImageName, image)
     else:
@@ -56,3 +60,25 @@ for croppedImageName in croppedImagesDir:
 
 if os.listdir().__contains__('review'):
     shutil.rmtree('review', ignore_errors=True)
+
+IMG_SIZE = 224
+
+
+if not os.listdir().__contains__('resizedMRI224x224'):
+    os.mkdir('resizedMRI224x224')
+    os.mkdir('resizedMRI224x224/no')
+    os.mkdir('resizedMRI224x224/yes')
+else:
+    shutil.rmtree('resizedMRI224x224')
+    os.mkdir('resizedMRI224x224')
+    os.mkdir('resizedMRI224x224/yes')
+    os.mkdir('resizedMRI224x224/no')
+
+for croppedImageName in croppedImagesDir:
+    image = cv2.imread("cropped/" + croppedImageName, cv2.IMREAD_GRAYSCALE)
+    image = cv2.resize(image, (IMG_SIZE, IMG_SIZE))
+    image = image.reshape(IMG_SIZE, IMG_SIZE)
+    if croppedImageName.upper().__contains__("Y"):
+        cv2.imwrite("resizedMRI224x224/yes/" + croppedImageName, image)
+    else:
+        cv2.imwrite("resizedMRI224x224/no/" + croppedImageName, image)
